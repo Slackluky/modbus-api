@@ -30,6 +30,7 @@ class Schedule {
         if (this.recurrence === 'once') {
             const start = new Date(this.startTime.includes('T') ? this.startTime : this.startTime.replace(' ', 'T'));
             const end = new Date(this.endTime.includes('T') ? this.endTime : this.endTime.replace(' ', 'T'));
+            logger.info('Checking once schedule', { start, end, targetDate });
             return targetDate >= start && targetDate <= end;
         } else {
             // For both daily and weekly, check time portion
@@ -63,25 +64,53 @@ class ScheduleManager {
     async init() {
         try {
             await fs.mkdir(path.dirname(this.storageFile), { recursive: true });
+            // Create empty schedules file if it doesn't exist
+            try {
+                await fs.access(this.storageFile);
+            } catch (err) {
+                if (err.code === 'ENOENT') {
+                    await fs.writeFile(this.storageFile, '[]', 'utf8');
+                    logger.info('Created empty schedules file');
+                }
+            }
             await this.loadSchedules();
         } catch (err) {
             logger.error('Failed to initialize schedule manager', { error: err.message });
+            // Initialize with empty Map instead of failing
+            this.schedules = new Map();
         }
     }
 
     async loadSchedules() {
         try {
             const data = await fs.readFile(this.storageFile, 'utf8');
-            const schedules = JSON.parse(data);
+            let schedules = JSON.parse(data);
+            
+            // Convert plain objects to Schedule instances
+            schedules = schedules.map(s => {
+                const schedule = new Schedule(
+                    s.slaveId,
+                    s.relayNumber,
+                    s.startTime,
+                    s.endTime,
+                    s.recurrence,
+                    s.daysOfWeek,
+                    s.active
+                );
+                schedule.id = s.id; // Preserve the original ID
+                schedule.createdAt = s.createdAt; // Preserve creation time
+                return schedule;
+            });
+
             this.schedules.clear();
             schedules.forEach(schedule => {
                 this.schedules.set(schedule.id, schedule);
             });
             logger.info('Schedules loaded from storage', { count: schedules.length });
         } catch (err) {
-            if (err.code !== 'ENOENT') {
-                logger.error('Failed to load schedules', { error: err.message });
-            }
+            logger.error('Failed to load schedules', { error: err.message });
+            // Initialize with empty Map on error
+            this.schedules.clear();
         }
     }
 
@@ -96,10 +125,35 @@ class ScheduleManager {
     }
 
     addSchedule(slaveId, relayNumber, startTime, endTime, recurrence = 'once', daysOfWeek = []) {
-        const schedule = new Schedule(slaveId, relayNumber, startTime, endTime, recurrence, daysOfWeek);
-        this.schedules.set(schedule.id, schedule);
-        this.saveSchedules();
-        return schedule;
+        // Find existing schedule for this slave and relay
+        const existingSchedule = Array.from(this.schedules.values())
+            .find(s => s.slaveId === slaveId && s.relayNumber === relayNumber);
+
+        if (existingSchedule) {
+            // Update existing schedule
+            existingSchedule.startTime = startTime;
+            existingSchedule.endTime = endTime;
+            existingSchedule.recurrence = recurrence;
+            existingSchedule.daysOfWeek = daysOfWeek;
+            this.saveSchedules();
+            logger.info('Updated existing schedule', { 
+                slaveId, 
+                relayNumber, 
+                scheduleId: existingSchedule.id 
+            });
+            return existingSchedule;
+        } else {
+            // Create new schedule
+            const schedule = new Schedule(slaveId, relayNumber, startTime, endTime, recurrence, daysOfWeek);
+            this.schedules.set(schedule.id, schedule);
+            this.saveSchedules();
+            logger.info('Created new schedule', { 
+                slaveId, 
+                relayNumber, 
+                scheduleId: schedule.id 
+            });
+            return schedule;
+        }
     }
 
     getSchedule(id) {
