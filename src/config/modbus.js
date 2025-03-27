@@ -8,7 +8,7 @@ class ModbusClient {
         this.isConnected = false;
         this.reconnectDelay = parseInt(process.env.MODBUS_RECONNECT_DELAY) || 5000;
         this.currentSlaveId = null;
-        this.slaves = [1, 2, 3, 4, 5, 6, 7, 8];
+        this.slaves = [{id:1}, {id:2}, {id:3}, {id:4}, {id:5}, {id:6}, {id:7}, {id:8}];
     }
 
     async connect() {
