@@ -1,6 +1,7 @@
 const logger = require('../config/logger');
 const modbusClient = require('../config/modbus');
 const scheduleManager = require('../models/schedule');
+const { getCurrentTime } = require('../config/timezone');
 
 class TimerManager {
     constructor() {
@@ -86,9 +87,10 @@ class TimerManager {
     async _updateRelayState(slaveId, relayNumber) {
         const key = this.getKey(slaveId, relayNumber);
         const schedules = scheduleManager.getSchedulesForRelay(slaveId, relayNumber);
-        const shouldBeOn = schedules.some(schedule => schedule.isActiveForDate(new Date()));
+        const shouldBeOn = schedules.some(schedule => schedule.isActiveForDate(getCurrentTime()));
 
         // Only update if state has changed
+        
         if (this.relayStates.get(key) !== shouldBeOn) {
             try {
                 await modbusClient.setRelayState(slaveId, relayNumber, shouldBeOn);

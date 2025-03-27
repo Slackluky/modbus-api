@@ -1,6 +1,7 @@
 const fs = require('fs').promises;
 const path = require('path');
 const logger = require('../config/logger');
+const { toAppTimezone, getCurrentTime } = require('../config/timezone');
 
 class Schedule {
     constructor(slaveId, relayNumber, startTime, endTime, recurrence = 'once', daysOfWeek = [], active = true) {
@@ -12,13 +13,13 @@ class Schedule {
         this.recurrence = recurrence; // 'once', 'daily', 'weekly'
         this.daysOfWeek = daysOfWeek; // [0-6] for weekly recurrence (0 = Sunday)
         this.active = active;
-        this.createdAt = new Date().toISOString();
+        this.createdAt = getCurrentTime();
     }
 
     isActiveForDate(date) {
         if (!this.active) return false;
 
-        const targetDate = new Date(date);
+        const targetDate = new Date(toAppTimezone(date));
         
         // First check day of week for weekly recurrence
         if (this.recurrence === 'weekly' && !this.daysOfWeek.includes(targetDate.getDay())) {

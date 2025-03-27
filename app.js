@@ -1,5 +1,9 @@
 require('dotenv').config();
 const express = require('express');
+const { DEFAULT_TIMEZONE } = require('./src/config/timezone');
+
+// Set default timezone for the application
+process.env.TZ = DEFAULT_TIMEZONE;
 const cors = require('cors');
 const modbusClient = require('./src/config/modbus');
 const relayRoutes = require('./src/routes/relayRoutes');
