@@ -19,7 +19,7 @@ class Schedule {
     isActiveForDate(date) {
         if (!this.active) return false;
 
-        const targetDate = new Date(toAppTimezone(date));
+        const targetDate = new Date(date);
         
         // First check day of week for weekly recurrence
         if (this.recurrence === 'weekly' && !this.daysOfWeek.includes(targetDate.getDay())) {
