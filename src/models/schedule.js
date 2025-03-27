@@ -20,27 +20,35 @@ class Schedule {
 
         const targetDate = new Date(date);
         
-        switch (this.recurrence) {
-            case 'once':
-                const start = new Date(this.startTime.replace(" ", "T"));
-                const end = new Date(this.endTime.replace(" ", "T"));
-                return targetDate >= start && targetDate <= end;
-            
-            case 'daily':
-                const [startHour, startMinute] = this.startTime.split(':').map(Number);
-                const [endHour, endMinute] = this.endTime.split(':').map(Number);
-                const targetHour = targetDate.getHours();
-                const targetMinute = targetDate.getMinutes();
-                
-                return (targetHour > startHour || (targetHour === startHour && targetMinute >= startMinute)) &&
-                       (targetHour < endHour || (targetHour === endHour && targetMinute <= endMinute));
-            
-            case 'weekly':
-                if (!this.daysOfWeek.includes(targetDate.getDay())) return false;
-                return this.isActiveForDate(date); // Reuse daily time check
-            
-            default:
-                return false;
+        // First check day of week for weekly recurrence
+        if (this.recurrence === 'weekly' && !this.daysOfWeek.includes(targetDate.getDay())) {
+            return false;
+        }
+
+        // Handle time checks based on recurrence type
+        if (this.recurrence === 'once') {
+            const start = new Date(this.startTime.includes('T') ? this.startTime : this.startTime.replace(' ', 'T'));
+            const end = new Date(this.endTime.includes('T') ? this.endTime : this.endTime.replace(' ', 'T'));
+            return targetDate >= start && targetDate <= end;
+        } else {
+            // For both daily and weekly, check time portion
+            const [startHour, startMinute] = this.startTime.split(':').map(Number);
+            const [endHour, endMinute] = this.endTime.split(':').map(Number);
+            const targetHour = targetDate.getHours();
+            const targetMinute = targetDate.getMinutes();
+
+            // Convert all times to minutes for easier comparison
+            const startTimeInMinutes = startHour * 60 + startMinute;
+            const endTimeInMinutes = endHour * 60 + endMinute;
+            const targetTimeInMinutes = targetHour * 60 + targetMinute;
+
+            if (endTimeInMinutes >= startTimeInMinutes) {
+                // Same day schedule (e.g., 09:00-17:00)
+                return targetTimeInMinutes >= startTimeInMinutes && targetTimeInMinutes <= endTimeInMinutes;
+            } else {
+                // Overnight schedule (e.g., 22:00-06:00)
+                return targetTimeInMinutes >= startTimeInMinutes || targetTimeInMinutes <= endTimeInMinutes;
+            }
         }
     }
 }
