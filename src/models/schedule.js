@@ -22,8 +22,8 @@ class Schedule {
         
         switch (this.recurrence) {
             case 'once':
-                const start = new Date(this.startTime);
-                const end = new Date(this.endTime);
+                const start = new Date(this.startTime.replace(" ", "T"));
+                const end = new Date(this.endTime.replace(" ", "T"));
                 return targetDate >= start && targetDate <= end;
             
             case 'daily':
