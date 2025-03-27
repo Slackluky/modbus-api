@@ -8,6 +8,7 @@ class ModbusClient {
         this.isConnected = false;
         this.reconnectDelay = parseInt(process.env.MODBUS_RECONNECT_DELAY) || 5000;
         this.currentSlaveId = null;
+        this.slaves = [1, 2, 3, 4, 5, 6, 7, 8];
     }
 
     async connect() {
@@ -18,7 +19,7 @@ class ModbusClient {
                 stopBits: parseInt(process.env.MODBUS_STOP_BITS),
                 parity: process.env.MODBUS_PARITY
             });
-            await this.selectSlave(parseInt(process.env.MODBUS_DEVICE_ID));
+            this.client.setID(parseInt(process.env.MODBUS_DEVICE_ID));
             this.isConnected = true;
             console.log('Connected to Modbus device');
 
