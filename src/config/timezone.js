@@ -1,6 +1,6 @@
 const DEFAULT_TIMEZONE = process.env.TZ || Intl.DateTimeFormat().resolvedOptions().timeZone;
 const { format } = require('date-fns');
-const { utcToZonedTime } = require('date-fns-tz');
+const { formatInTimeZone } = require('date-fns-tz');
 
 module.exports = {
     DEFAULT_TIMEZONE,
@@ -28,6 +28,6 @@ module.exports = {
     // Helper function to get current time in ISO format with correct timezone
     getCurrentTimeISO: () => {
         const now = new Date();
-        return format(utcToZonedTime(now, DEFAULT_TIMEZONE), 'yyyy-MM-dd HH:mm');
+        return format(formatInTimeZone(now, DEFAULT_TIMEZONE), 'yyyy-MM-dd HH:mm');
     }
 };
