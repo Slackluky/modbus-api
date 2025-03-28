@@ -90,7 +90,6 @@ class TimerManager {
         const shouldBeOn = schedules.some(schedule => schedule.isActiveForDate(getCurrentTime()));
 
         // Only update if state has changed
-        
         if (this.relayStates.get(key) !== shouldBeOn) {
             try {
                 await modbusClient.setRelayState(slaveId, relayNumber, shouldBeOn);

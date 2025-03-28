@@ -19,39 +19,36 @@ class Schedule {
     isActiveForDate(date) {
         if (!this.active) return false;
 
-        const targetDate = new Date(date);
+        // Convert input date to our timezone
+        const targetDate = new Date(date).toLocaleString('en-US', { timeZone: 'Asia/Bangkok', hour12: false });
+        const targetTime = targetDate.split(',')[1].trim();
+        const [targetHour, targetMinute] = targetTime.split(':').map(Number);
         
-        // First check day of week for weekly recurrence
-        if (this.recurrence === 'weekly' && !this.daysOfWeek.includes(targetDate.getDay())) {
-            return false;
-        }
-
-        // Handle time checks based on recurrence type
-        if (this.recurrence === 'once') {
-            const start = new Date(this.startTime.includes('T') ? this.startTime : this.startTime.replace(' ', 'T'));
-            const end = new Date(this.endTime.includes('T') ? this.endTime : this.endTime.replace(' ', 'T'));
-            logger.info('Checking once schedule', { start, end, targetDate });
-            return targetDate >= start && targetDate <= end;
-        } else {
-            // For both daily and weekly, check time portion
-            const [startHour, startMinute] = this.startTime.split(':').map(Number);
-            const [endHour, endMinute] = this.endTime.split(':').map(Number);
-            const targetHour = targetDate.getHours();
-            const targetMinute = targetDate.getMinutes();
-
-            // Convert all times to minutes for easier comparison
-            const startTimeInMinutes = startHour * 60 + startMinute;
-            const endTimeInMinutes = endHour * 60 + endMinute;
-            const targetTimeInMinutes = targetHour * 60 + targetMinute;
-
-            if (endTimeInMinutes >= startTimeInMinutes) {
-                // Same day schedule (e.g., 09:00-17:00)
-                return targetTimeInMinutes >= startTimeInMinutes && targetTimeInMinutes <= endTimeInMinutes;
-            } else {
-                // Overnight schedule (e.g., 22:00-06:00)
-                return targetTimeInMinutes >= startTimeInMinutes || targetTimeInMinutes <= endTimeInMinutes;
+        // Check day of week for weekly recurrence
+        if (this.recurrence === 'weekly') {
+            const currentDay = new Date(date).getDay();
+            if (!this.daysOfWeek.includes(currentDay)) {
+                return false;
             }
         }
+
+        // Parse start and end times
+        const [startHour, startMinute] = this.startTime.split(':').map(Number);
+        const [endHour, endMinute] = this.endTime.split(':').map(Number);
+
+        // Convert times to minutes for easier comparison
+        const targetTimeInMinutes = targetHour * 60 + targetMinute;
+        const startTimeInMinutes = startHour * 60 + startMinute;
+        const endTimeInMinutes = endHour * 60 + endMinute;
+
+        // Handle time wrapping around midnight
+        if (startTimeInMinutes > endTimeInMinutes) {
+            // Schedule crosses midnight
+            return targetTimeInMinutes >= startTimeInMinutes || targetTimeInMinutes <= endTimeInMinutes;
+        }
+
+        // Normal time comparison (same day)
+        return targetTimeInMinutes >= startTimeInMinutes && targetTimeInMinutes < endTimeInMinutes;
     }
 }
 
