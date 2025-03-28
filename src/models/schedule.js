@@ -21,6 +21,7 @@ class Schedule {
 
         // Convert input date to our timezone
         const targetTime = toAppTimezone(date);
+        logger.debug('Converted time:', targetTime);
         const [targetHour, targetMinute] = targetTime.split(':').map(Number);
         
         // Check day of week for weekly recurrence
