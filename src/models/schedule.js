@@ -1,7 +1,7 @@
 const fs = require('fs').promises;
 const path = require('path');
 const logger = require('../config/logger');
-const { toAppTimezone, getCurrentTime } = require('../config/timezone');
+const { toAppTimezone, getCurrentTime, timeToMinutes, minutesToTime } = require('../config/timezone');
 
 class Schedule {
     constructor(slaveId, relayNumber, startTime, endTime, recurrence = 'once', daysOfWeek = [], active = true) {
@@ -20,26 +20,24 @@ class Schedule {
         if (!this.active) return false;
 
         // Convert input date to our timezone
-        const targetDate = new Date(date).toLocaleString('en-US', { timeZone: 'Asia/Bangkok', hour12: false });
-        const targetTime = targetDate.split(',')[1].trim();
+        const targetTime = toAppTimezone(date);
         const [targetHour, targetMinute] = targetTime.split(':').map(Number);
         
         // Check day of week for weekly recurrence
         if (this.recurrence === 'weekly') {
-            const currentDay = new Date(date).getDay();
-            if (!this.daysOfWeek.includes(currentDay)) {
+            const currentDay = new Date(date).toLocaleString('en-US', { 
+                timeZone: process.env.TIMEZONE || 'Asia/Bangkok',
+                weekday: 'numeric'
+            });
+            if (!this.daysOfWeek.includes(Number(currentDay))) {
                 return false;
             }
         }
 
-        // Parse start and end times
-        const [startHour, startMinute] = this.startTime.split(':').map(Number);
-        const [endHour, endMinute] = this.endTime.split(':').map(Number);
-
         // Convert times to minutes for easier comparison
-        const targetTimeInMinutes = targetHour * 60 + targetMinute;
-        const startTimeInMinutes = startHour * 60 + startMinute;
-        const endTimeInMinutes = endHour * 60 + endMinute;
+        const targetTimeInMinutes = timeToMinutes(`${targetHour}:${targetMinute}`);
+        const startTimeInMinutes = timeToMinutes(this.startTime);
+        const endTimeInMinutes = timeToMinutes(this.endTime);
 
         // Handle time wrapping around midnight
         if (startTimeInMinutes > endTimeInMinutes) {

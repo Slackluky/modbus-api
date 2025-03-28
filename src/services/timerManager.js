@@ -87,7 +87,8 @@ class TimerManager {
     async _updateRelayState(slaveId, relayNumber) {
         const key = this.getKey(slaveId, relayNumber);
         const schedules = scheduleManager.getSchedulesForRelay(slaveId, relayNumber);
-        const shouldBeOn = schedules.some(schedule => schedule.isActiveForDate(getCurrentTime()));
+        const currentTime = getCurrentTime();
+        const shouldBeOn = schedules.some(schedule => schedule.isActiveForDate(currentTime));
 
         // Only update if state has changed
         if (this.relayStates.get(key) !== shouldBeOn) {
@@ -98,21 +99,18 @@ class TimerManager {
             } catch (err) {
                 logger.error('Failed to set relay state from timer', { 
                     error: err.message, 
-                    stack: err.stack,
                     slaveId,
-                    relayNumber,
-                    state: shouldBeOn
+                    relayNumber
                 });
             }
         }
     }
 
     async shutdown() {
-        // Clear check interval
         if (this.checkInterval) {
             clearInterval(this.checkInterval);
-            this.checkInterval = null;
         }
+
 
         // Turn off all relays that were managed by timers
         const promises = Array.from(this.relayStates.entries()).map(async ([key, state]) => {
@@ -132,7 +130,7 @@ class TimerManager {
         });
 
         await Promise.all(promises);
-        logger.info('Timer manager shutdown complete');
+        logger.info('Timer manager shutting down');
     }
 }
 
