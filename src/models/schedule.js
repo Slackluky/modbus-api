@@ -1,7 +1,7 @@
 const fs = require('fs').promises;
 const path = require('path');
 const logger = require('../config/logger');
-const { toAppTimezone, getCurrentTime, timeToMinutes, minutesToTime } = require('../config/timezone');
+const { toAppTimezone, getCurrentTime, timeToMinutes } = require('../config/timezone');
 
 class Schedule {
     constructor(slaveId, relayNumber, startTime, endTime, recurrence = 'once', daysOfWeek = [], active = true) {
