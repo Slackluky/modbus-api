@@ -1,4 +1,4 @@
-const DEFAULT_TIMEZONE = process.env.TIMEZONE || 'Asia/Bangkok'; // Default to UTC+7 if not specified
+const DEFAULT_TIMEZONE = process.env.TZ || Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 module.exports = {
     DEFAULT_TIMEZONE,

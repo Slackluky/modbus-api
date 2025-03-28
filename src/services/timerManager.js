@@ -2,7 +2,6 @@ const logger = require('../config/logger');
 const modbusClient = require('../config/modbus');
 const scheduleManager = require('../models/schedule');
 const { getCurrentTime } = require('../config/timezone');
-
 class TimerManager {
     constructor() {
         this.relayStates = new Map(); // Map of slaveId_relayNumber -> current state
