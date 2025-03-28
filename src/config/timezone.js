@@ -7,12 +7,12 @@ module.exports = {
     // Helper function to convert date to the application timezone
     toAppTimezone: (date) => {
         const dateObj = new Date(date);
-        return format(utcToZonedTime(dateObj, DEFAULT_TIMEZONE), 'yyyy-MM-dd HH:mm');
+        return formatInTimeZone(dateObj, DEFAULT_TIMEZONE, 'yyyy-MM-dd HH:mm');
     },
     // Helper function to get current time in the application timezone
     getCurrentTime: () => {
         const now = new Date();
-        return format(utcToZonedTime(now, DEFAULT_TIMEZONE), 'yyyy-MM-dd HH:mm');
+        return formatInTimeZone(now, DEFAULT_TIMEZONE, 'yyyy-MM-dd HH:mm');
     },
     // Helper function to parse a time string to minutes
     timeToMinutes: (timeString) => {
@@ -28,6 +28,6 @@ module.exports = {
     // Helper function to get current time in ISO format with correct timezone
     getCurrentTimeISO: () => {
         const now = new Date();
-        return format(formatInTimeZone(now, DEFAULT_TIMEZONE), 'yyyy-MM-dd HH:mm');
+        return formatInTimeZone(now, DEFAULT_TIMEZONE, 'yyyy-MM-dd HH:mm');
     }
 };
