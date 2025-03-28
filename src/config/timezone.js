@@ -1,5 +1,6 @@
 const DEFAULT_TIMEZONE = process.env.TZ || Intl.DateTimeFormat().resolvedOptions().timeZone;
-const { format, utcToZonedTime } = require('date-fns-tz');
+const { format } = require('date-fns');
+const { utcToZonedTime } = require('date-fns-tz');
 
 module.exports = {
     DEFAULT_TIMEZONE,
