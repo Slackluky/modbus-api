@@ -1,23 +1,19 @@
 const DEFAULT_TIMEZONE = process.env.TZ || Intl.DateTimeFormat().resolvedOptions().timeZone;
-
+const { format } = require('date-fns');
 module.exports = {
     DEFAULT_TIMEZONE,
     // Helper function to convert date to the application timezone
     toAppTimezone: (date) => {
-        return new Date(date).toLocaleString('en-US', { 
-            timeZone: DEFAULT_TIMEZONE,
-            hour12: false,
-            hour: '2-digit',
-            minute: '2-digit'
+        const date = new Date(date);
+        return format(date, 'yyyy-MM-dd HH:mm', { 
+            timeZone: DEFAULT_TIMEZONE
         });
     },
     // Helper function to get current time in the application timezone
     getCurrentTime: () => {
-        return new Date().toLocaleString('en-US', { 
-            timeZone: DEFAULT_TIMEZONE,
-            hour12: false,
-            hour: '2-digit',
-            minute: '2-digit'
+        const now = new Date();
+        return format(now, 'yyyy-MM-dd HH:mm', { 
+            timeZone: DEFAULT_TIMEZONE
         });
     },
     // Helper function to parse a time string to minutes
