@@ -1,23 +1,30 @@
-import ModbusRTU from "modbus-serial";
+import { SerialPort } from "serialport";
 
-const client = new ModbusRTU();
-const port = "COM5"; // Change to your actual COM port
+const portPath = "COM5"; // Change to your actual COM port
+const baudRate = 9600;
 
-async function changeSlaveID() {
-  try {
-    await client.connectRTUBuffered(port, { baudRate: 9600, parity: "none", dataBits: 8, stopBits: 1 });
+const port = new SerialPort({
+  path: portPath,
+  baudRate: baudRate,
+  parity: "none",
+  dataBits: 8,
+  stopBits: 1,
+});
 
-    // Convert your command to a Buffer
-    const rawCommand = Buffer.from([0x00, 0x10, 0x00, 0x00, 0x01, 0x02, 0x00, 0x02, 0x2A, 0x01]); // Change ID to 2
+const rawCommand = Buffer.from([0x00, 0x10, 0x00, 0x00, 0x01, 0x02, 0x00, 0x01, 0x6A, 0x00]);
 
-    // Send raw buffer
-    await client.writeFC16(0, rawCommand);
+port.on("open", () => {
+  console.log("✅ Serial port opened");
+  port.write(rawCommand, (err) => {
+    if (err) {
+      console.error("❌ Error sending raw command:", err);
+    } else {
+      console.log("✅ Successfully sent raw command");
+    }
+    port.drain(() => port.close());
+  });
+});
 
-    console.log("✅ Slave ID changed successfully!");
-    client.close();
-  } catch (err) {
-    console.error("❌ Error:", err);
-  }
-}
-
-changeSlaveID();
+port.on("error", (err) => {
+  console.error("❌ Serial port error:", err);
+});
