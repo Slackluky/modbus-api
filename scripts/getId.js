@@ -85,7 +85,20 @@ port.open((err) => {
 });
 
 port.on("data", (data) => {
+  if (!data) {
+    console.error(" Received undefined data");
+    closePort();
+    return;
+  }
+  
   console.log(" Received raw data:", data.toString("hex"));
+  
+  if (!(data instanceof Buffer)) {
+    console.error(" Received data is not a Buffer");
+    closePort();
+    return;
+  }
+  
   responseBuffer = Buffer.concat([responseBuffer, data]);
   
   // Check if we have a complete response (minimum expected length is 7 bytes)
@@ -95,9 +108,9 @@ port.on("data", (data) => {
     
     // Parse the response
     try {
-      const slaveId = responseBuffer[0].toString(16).padStart(2, '0');
-      const functionCode = responseBuffer[1].toString(16).padStart(2, '0');
-      const byteCount = responseBuffer[2];
+      const slaveId = responseBuffer[0]?.toString(16)?.padStart(2, '0') || '00';
+      const functionCode = responseBuffer[1]?.toString(16)?.padStart(2, '0') || '00';
+      const byteCount = responseBuffer[2] || 0;
       const dataBytes = responseBuffer.slice(3, 3 + byteCount);
       
       console.log(" Response details:");
@@ -112,6 +125,7 @@ port.on("data", (data) => {
       }
     } catch (error) {
       console.error(" Error parsing response:", error.message);
+      console.error(" Response buffer:", responseBuffer.toString("hex"));
     }
     
     // Clear timeout if we got a response
