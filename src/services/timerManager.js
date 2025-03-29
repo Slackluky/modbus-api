@@ -109,6 +109,7 @@ class TimerManager {
     async shutdown() {
         if (this.checkInterval) {
             clearInterval(this.checkInterval);
+            this.checkInterval = null;
         }
 
 
