@@ -1,4 +1,4 @@
-const SerialPort = require('serialport');
+const {SerialPort} = require('serialport');
 const portPath = "COM5"; // Change to your actual COM port
 const baudRate = 9600;
 
