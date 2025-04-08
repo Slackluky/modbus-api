@@ -1,7 +1,7 @@
-import { SerialPort } from 'serialport';
+const { SerialPort } = require('serialport');
 
 // Configuration - update these values based on your setup
-const PORT_PATH = '/dev/ttyUSB0'; // Change this to your serial port
+const PORT_PATH = 'COM5'; // Change this to your serial port
 const BAUD_RATE = 9600;
 const PARITY = 'none';
 const STOP_BITS = 1;
