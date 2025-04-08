@@ -57,7 +57,7 @@ function sendCommand(command, description) {
       // For simplicity, we'll wait a short time and assume the response is complete
       setTimeout(() => {
         port.removeListener('data', responseHandler);
-        const responseBuffer = Buffer.from([0x00, 0x03, 0x02, 0x00, 0x01, 0x44, 0x44]);
+        const responseBuffer = Buffer.from(responseData);
         console.log(`${description} Response: ${bufferToHexString(responseBuffer)}`);
         resolve(responseBuffer);
       }, 500);
@@ -104,7 +104,7 @@ async function main() {
     
     // Set the new slave ID based on user input
     const command = generateSetSlaveIdCommand(newSlaveId);
-    await sendCommand(command, 'Set Slave ID');
+    await sendCommand(SET_SLAVE_ID_01, 'Set Slave ID');
     
     // Verify the change by reading again
     console.log('\n--- Verifying new slave ID ---');
