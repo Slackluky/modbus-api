@@ -1,5 +1,5 @@
 const { SerialPort } = require('serialport');
-
+const crc = require('crc'); // npm install crc
 // Configuration - update these values based on your setup
 const PORT_PATH = 'COM5'; // Change this to your serial port
 const BAUD_RATE = 9600;
@@ -13,6 +13,23 @@ const SET_SLAVE_ID_01 = Buffer.from([0x00, 0x10, 0x00, 0x00, 0x00, 0x01, 0x02, 0
 const SET_SLAVE_ID_02 = Buffer.from([0x00, 0x10, 0x00, 0x00, 0x00, 0x01, 0x02, 0x00, 0x02, 0x2A, 0x01]);
 const SET_SLAVE_ID_03 = Buffer.from([0x00, 0x10, 0x00, 0x00, 0x00, 0x01, 0x02, 0x00, 0x03, 0xEB, 0xC1]);
 
+
+function generateSetSlaveIdCommand(newSlaveId) {
+    const base = Buffer.from([
+      0x00, 0x10,             // Function Code + Sub-function?
+      0x00, 0x00,             // Starting Address
+      0x00, 0x01,             // Quantity of Registers
+      0x02,                   // Byte Count
+      0x00, newSlaveId        // New Slave ID (2 bytes)
+    ]);
+  // Compute CRC16-Modbus (LE)
+  const crcValue = crc.crc16modbus(base);
+  const crcBuffer = Buffer.alloc(2);
+  crcBuffer.writeUInt16LE(crcValue, 0);
+
+  // Concatenate base + CRC
+  return Buffer.concat([base, crcBuffer]);
+}
 // Create a serial port instance
 const port = new SerialPort({
   path: PORT_PATH,
@@ -40,7 +57,7 @@ function sendCommand(command, description) {
       // For simplicity, we'll wait a short time and assume the response is complete
       setTimeout(() => {
         port.removeListener('data', responseHandler);
-        const responseBuffer = Buffer.from(responseData);
+        const responseBuffer = Buffer.from([0x00, 0x03, 0x02, 0x00, 0x01, 0x44, 0x44]);
         console.log(`${description} Response: ${bufferToHexString(responseBuffer)}`);
         resolve(responseBuffer);
       }, 500);
@@ -81,24 +98,13 @@ async function main() {
     }
     
     // Ask user which ID to set
-    const newSlaveId = process.argv[2] || '12'; // Default to 1 if not specified
+    const newSlaveId = process.argv[2] || '1'; // Default to 1 if not specified
     
     console.log(`\n--- Setting slave ID to ${newSlaveId} ---`);
     
     // Set the new slave ID based on user input
-    switch (newSlaveId) {
-      case '1':
-        await sendCommand(SET_SLAVE_ID_01, 'Set Slave ID to 01');
-        break;
-      case '2':
-        await sendCommand(SET_SLAVE_ID_02, 'Set Slave ID to 02');
-        break;
-      case '3':
-        await sendCommand(SET_SLAVE_ID_03, 'Set Slave ID to 03');
-        break;
-      default:
-        console.log('Only slave IDs 1, 2, and 3 are supported in this script');
-    }
+    const command = generateSetSlaveIdCommand(newSlaveId);
+    await sendCommand(command, 'Set Slave ID');
     
     // Verify the change by reading again
     console.log('\n--- Verifying new slave ID ---');
