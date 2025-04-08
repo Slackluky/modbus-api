@@ -49,7 +49,7 @@ function calculateCRC(buffer) {
         crc = crc >> 1;
       }
     }
-  }
+  } 
   return [(crc & 0xFF), ((crc >> 8) & 0xFF)];
 }
 
@@ -62,11 +62,11 @@ console.log(`  - Quantity: ${rawCommand[4].toString(16)}${rawCommand[5].toString
 console.log(`  - CRC: ${rawCommand[6].toString(16)}${rawCommand[7].toString(16)}`);
 
 // Open the port manually
-port.open((err) => {
-  if (err) {
-    console.error(" Error opening port:", err);
-    closePort();
-    return;
+    port.open((err) => {
+    if (err) {
+        console.error(" Error opening port:", err);
+        closePort();
+        return;
   }
   
   console.log(" Serial port opened");
