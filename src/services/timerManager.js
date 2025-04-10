@@ -90,6 +90,7 @@ class TimerManager {
         const currentTime = getCurrentTime();
         
         const shouldBeOn = schedules.some(schedule => schedule.isActiveForDate(currentTime));
+        console.log({shouldBeOn})
         logger.debug('Checking relay state', { slaveId, relayNumber, currentTime, shouldBeOn });
         // Only update if state has changed
         if (this.relayStates.get(key) !== shouldBeOn) {
