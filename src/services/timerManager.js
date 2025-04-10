@@ -74,9 +74,10 @@ class TimerManager {
     }
 
     async _checkAllRelayStates() {
+        
         const activeSchedules = scheduleManager.getActiveSchedules();
         const relayKeys = new Set(activeSchedules.map(s => this.getKey(s.slaveId, s.relayNumber)));
-
+        console.log({relayKeys})   
         for (const key of relayKeys) {
             const [slaveId, relayNumber] = key.split('_').map(Number);
             await this._updateRelayState(slaveId, relayNumber);
@@ -88,7 +89,7 @@ class TimerManager {
         const schedules = scheduleManager.getSchedulesForRelay(slaveId, relayNumber);
         const currentTime = getCurrentTime();
         
-        const shouldBeOn = schedules.some(schedule => schedule.isActiveForDate(currentTime));
+        const shouldBeOn = schedules.some(schedule => schedule.isActiveForDate( ));
         logger.debug('Checking relay state', { slaveId, relayNumber, currentTime, shouldBeOn });
         // Only update if state has changed
         if (this.relayStates.get(key) !== shouldBeOn) {
