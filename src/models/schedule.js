@@ -20,6 +20,7 @@ class Schedule {
         if (!this.active) return false;
 
         // Convert input date to our timezone
+        console.log({date})
         const targetTime = toAppTimezone(date);
         logger.debug('Converted time:', targetTime);
         const [targetHour, targetMinute] = targetTime.split(':').map(Number);
