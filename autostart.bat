@@ -12,7 +12,7 @@ IF NOT EXIST node_modules (
 )
 
 :: Start the server
-node run start
+npm run start
 
 echo.
 echo [✔] Express server has exited or crashed.
