@@ -42,6 +42,7 @@ class Schedule {
         const endTimeInMinutes = timeToMinutes(this.endTime);
 
         // Handle time wrapping around midnight
+        console.log({targetTimeInMinutes, startTimeInMinutes, endTimeInMinutes})
         if (startTimeInMinutes > endTimeInMinutes) {
             // Schedule crosses midnight
             return targetTimeInMinutes >= startTimeInMinutes || targetTimeInMinutes <= endTimeInMinutes;
