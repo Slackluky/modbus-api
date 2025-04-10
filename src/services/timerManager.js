@@ -35,7 +35,7 @@ class TimerManager {
             daysOfWeek
         );
 
-        this.relayStates.set(this.getKey(slaveId, relayNumber), true);;
+        this.relayStates.set(this.getKey(slaveId, relayNumber), false);;
         // Update relay state immediately
         await this._updateRelayState(slaveId, relayNumber);
 
