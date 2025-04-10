@@ -35,7 +35,8 @@ class TimerManager {
             daysOfWeek
         );
 
-        this.relayStates.set(this.getKey(slaveId, relayNumber), false);;
+        await modbusClient.setRelayState(slaveId, relayNumber, true);
+        this.relayStates.set(this.getKey(slaveId, relayNumber), true);;
         // Update relay state immediately
         await this._updateRelayState(slaveId, relayNumber);
 
