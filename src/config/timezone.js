@@ -1,8 +1,9 @@
 const DEFAULT_TIMEZONE = process.env.TZ || Intl.DateTimeFormat().resolvedOptions().timeZone;
 const { format } = require('date-fns');
 const { formatInTimeZone } = require('date-fns-tz');
-
+const dateFormat = "yyyy-MM-dd HH:mm";
 module.exports = {
+    dateFormat,
     DEFAULT_TIMEZONE,
     // Helper function to convert date to the application timezone
     toAppTimezone: (date) => {

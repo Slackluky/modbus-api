@@ -1,7 +1,7 @@
 const fs = require('fs').promises;
 const path = require('path');
 const logger = require('../config/logger');
-const { toAppTimezone, getCurrentTime } = require('../config/timezone');
+const { toAppTimezone, getCurrentTime, dateFormat } = require('../config/timezone');
 const { parse, isBefore, isAfter } = require('date-fns');
 
 class Schedule {
@@ -38,9 +38,9 @@ class Schedule {
         }
 
         // Convert times to minutes for easier comparison
-        const targetTimeInMinutes = parse(targetTime, format, new Date());
-        const startTimeInMinutes = parse(this.startTime, format, new Date());
-        const endTimeInMinutes = parse(this.endTime, format, new Date());
+        const targetTimeInMinutes = parse(targetTime, dateFormat, new Date());
+        const startTimeInMinutes = parse(this.startTime, dateFormat, new Date());
+        const endTimeInMinutes = parse(this.endTime, dateFormat, new Date());
 
         // Handle time wrapping around midnight
         console.log({targetTimeInMinutes, startTimeInMinutes, endTimeInMinutes})
