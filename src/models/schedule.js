@@ -1,7 +1,8 @@
 const fs = require('fs').promises;
 const path = require('path');
 const logger = require('../config/logger');
-const { toAppTimezone, getCurrentTime, timeToMinutes } = require('../config/timezone');
+const { toAppTimezone, getCurrentTime } = require('../config/timezone');
+const { parse, isBefore, isAfter } = require('date-fns');
 
 class Schedule {
     constructor(slaveId, relayNumber, startTime, endTime, recurrence = 'once', daysOfWeek = [], active = true) {
@@ -37,19 +38,15 @@ class Schedule {
         }
 
         // Convert times to minutes for easier comparison
-        const targetTimeInMinutes = timeToMinutes(`${targetHour}:${targetMinute}`);
-        const startTimeInMinutes = timeToMinutes(this.startTime);
-        const endTimeInMinutes = timeToMinutes(this.endTime);
+        const targetTimeInMinutes = parse(targetTime, format, new Date());
+        const startTimeInMinutes = parse(this.startTime, format, new Date());
+        const endTimeInMinutes = parse(this.endTime, format, new Date());
 
         // Handle time wrapping around midnight
         console.log({targetTimeInMinutes, startTimeInMinutes, endTimeInMinutes})
-        if (startTimeInMinutes > endTimeInMinutes) {
-            // Schedule crosses midnight
-            return targetTimeInMinutes >= startTimeInMinutes || targetTimeInMinutes <= endTimeInMinutes;
-        }
 
         // Normal time comparison (same day)
-        return targetTimeInMinutes >= startTimeInMinutes && targetTimeInMinutes < endTimeInMinutes;
+        return isAfter(targetTimeInMinutes,startTimeInMinutes) && isBefore(targetTimeInMinutes, endTimeInMinutes);
     }
 }
 
