@@ -77,7 +77,7 @@ class TimerManager {
         
         const activeSchedules = scheduleManager.getActiveSchedules();
         const relayKeys = new Set(activeSchedules.map(s => this.getKey(s.slaveId, s.relayNumber)));
-        console.log({relayKeys})   
+        console.log({relayKeys, activeSchedules})   
         for (const key of relayKeys) {
             const [slaveId, relayNumber] = key.split('_').map(Number);
             await this._updateRelayState(slaveId, relayNumber);
