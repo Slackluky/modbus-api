@@ -152,7 +152,7 @@ const setRelayTimer = async (req, res) => {
         }
 
         const schedule = await timerManager.setTimer(slaveId, relayNumber, startTime, endTime, recurrence, daysOfWeek);
-        logger.info('Timer set successfully', schedule);
+        logger.info('Timer set successfully', {...schedule, status: 'success'});
         res.json(schedule);
     } catch (err) {
         logger.error('Failed to set timer', { 
