@@ -2,7 +2,7 @@ const fs = require('fs').promises;
 const path = require('path');
 const logger = require('../config/logger');
 const { toAppTimezone, getCurrentTime, dateFormat } = require('../config/timezone');
-const { parse, isBefore, isAfter } = require('date-fns');
+const { parse, isBefore, isAfter, isEqual } = require('date-fns');
 
 class Schedule {
     constructor(slaveId, relayNumber, startTime, endTime, recurrence = 'once', daysOfWeek = [], active = true) {
@@ -46,7 +46,7 @@ class Schedule {
         console.log({targetTimeInMinutes, startTimeInMinutes, endTimeInMinutes})
 
         // Normal time comparison (same day)
-        return isAfter(targetTimeInMinutes,startTimeInMinutes) && isBefore(targetTimeInMinutes, endTimeInMinutes);
+        return (isAfter(targetTimeInMinutes,startTimeInMinutes) || isEqual(targetTimeInMinutes,startTimeInMinutes)) && isBefore(targetTimeInMinutes, endTimeInMinutes);
     }
 }
 

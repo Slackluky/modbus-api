@@ -70,7 +70,7 @@ class TimerManager {
 
     startScheduleChecker() {
         // Check states every minute
-        this.checkInterval = setInterval(() => this._checkAllRelayStates(), 1 * 1000);
+        this.checkInterval = setInterval(() => this._checkAllRelayStates(), 60 * 1000);
         // Run initial check
         this._checkAllRelayStates();
     }
