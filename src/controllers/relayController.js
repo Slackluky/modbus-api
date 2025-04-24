@@ -166,6 +166,115 @@ const setRelayTimer = async (req, res) => {
     }
 };
 
+// Set multiple timers for relays
+const setRelayTimers = async (req, res) => {
+    logger.debug(`Calling setTimer for index result`);
+    try {
+        const timers = req.body.timers;
+        console.log({timers})
+        if (!Array.isArray(timers) || timers.length === 0) {
+            logger.warn('Timers array is required and must not be empty');
+            return res.status(400).json({ error: 'Timers array is required and must not be empty' });
+        }
+
+        const withTimeout = (promise, timeout = 5000) => {
+            const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('Timeout reached')), timeout)
+            );
+            return Promise.race([promise, timeoutPromise]);
+        };
+        const results = [];
+
+        for (let index = 0; index < timers.length; index++) {
+            const timer = timers[index];
+            logger.debug(`Calling setTimer for index ${index}...`);
+        
+            try {
+                const {
+                    slaveId,
+                    relayNumber,
+                    startTime,
+                    endTime,
+                    recurrence = 'once',
+                    daysOfWeek = []
+                } = timer;
+        
+                // Validation checks
+                if (isNaN(slaveId) || !modbusClient.getSlaveById(slaveId)) {
+                    const msg = `Invalid slave ID at index ${index}`;
+                    logger.warn(msg, { slaveId });
+                    throw new Error(msg);
+                }
+        
+                if (isNaN(relayNumber) || relayNumber < 1) {
+                    const msg = `Invalid relay number at index ${index}`;
+                    logger.warn(msg, { relayNumber });
+                    throw new Error(msg);
+                }
+        
+                if (!startTime || !endTime) {
+                    const msg = `Missing start or end time at index ${index}`;
+                    logger.warn(msg, { startTime, endTime });
+                    throw new Error(msg);
+                }
+        
+                if (!['once', 'daily', 'weekly'].includes(recurrence)) {
+                    const msg = `Invalid recurrence type at index ${index}`;
+                    logger.warn(msg, { recurrence });
+                    throw new Error(msg);
+                }
+        
+                if (recurrence === 'weekly' && (!Array.isArray(daysOfWeek) || daysOfWeek.length === 0)) {
+                    const msg = `Missing days of week for weekly recurrence at index ${index}`;
+                    logger.warn(msg, { daysOfWeek });
+                    throw new Error(msg);
+                }
+        
+                // Call to set timer
+                logger.debug(`Calling setTimer for index ${index}...`);
+                const schedule = await withTimeout(
+                    timerManager.setTimer(
+                        slaveId,
+                        relayNumber,
+                        startTime,
+                        endTime,
+                        recurrence,
+                        daysOfWeek
+                    ),
+                    1000 // Set timeout duration (e.g., 10000ms = 10 seconds)
+                );
+        
+                // Success
+                logger.info('Timer set successfully', { ...schedule, status: 'success', index });
+                results.push({ ...schedule, status: 'fulfilled', index });
+            } catch (err) {
+                // Handle error
+                logger.error(`Failed to set timer at index ${index}`, {
+                    error: err.message,
+                    index
+                });
+                results.push({ error: err.message, index, status: 'rejected' });
+            }
+        }
+        
+        const successful = results.filter(r => r.status === 'fulfilled').map(r => r);
+        const failed = results.filter(r => r.status === 'rejected').map((r, i) => ({
+            error: r.error,
+            index: i
+        }));
+
+        res.json({ successful, failed });
+    } catch (err) {
+        logger.error('Failed to set timers', {
+            error: err.message,
+            stack: err.stack,
+            body: req.body
+        });
+        res.status(500).json({ error: 'Internal server error', details: err.message });
+    }
+};
+
+
 // Clear timer for a relay
 const clearRelayTimer = async (req, res) => {
     try {
@@ -241,6 +350,7 @@ const getAllTimers = async (req, res) => {
 module.exports = {
     getSlaves,
     getRelayState,
+    setRelayTimers,
     setRelayState,
     setMultipleRelayStates,
     setRelayTimer,

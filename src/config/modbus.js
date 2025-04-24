@@ -65,9 +65,21 @@ class ModbusClient {
         if (!this.isConnected) {
             throw new Error('Modbus client not connected');
         }
-        await this.selectSlave(slaveId);
-        return await this.client.writeCoil(relayNumber - 1, state);
-    }
+    
+        try {
+            console.log(`[setRelayState] rawr 🐯 - Starting for Slave ${slaveId}, Relay ${relayNumber}`);
+            await this.selectSlave(slaveId);
+            console.log(`[setRelayState] roar 🦁 - Slave selected: ${slaveId}`);
+    
+            const result = await this.client.writeCoil(relayNumber - 1, state);
+            console.log(`[setRelayState] ✅ writeCoil completed for Relay ${relayNumber}`, result);
+    
+            return result;
+        } catch (err) {
+            console.error(`[setRelayState] ❌ Error:`, err.message);
+            throw err;
+        }
+    }    
 
     async setMultipleRelayStates(slaveId, states) {
         if (!this.isConnected) {

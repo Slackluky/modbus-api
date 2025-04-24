@@ -35,8 +35,8 @@ class TimerManager {
             daysOfWeek
         );
 
-        await modbusClient.setRelayState(slaveId, relayNumber, true);
-        this.relayStates.set(this.getKey(slaveId, relayNumber), true);;
+        // await modbusClient.setRelayState(slaveId, relayNumber, true);
+        this.relayStates.set(this.getKey(slaveId, relayNumber), true);
         // Update relay state immediately
         await this._updateRelayState(slaveId, relayNumber);
 
@@ -51,7 +51,6 @@ class TimerManager {
 
         return schedule;
     }
-
     async clearTimer(scheduleId) {
         const deleted = scheduleManager.deleteSchedule(scheduleId);
         if (deleted) {
@@ -70,7 +69,7 @@ class TimerManager {
 
     startScheduleChecker() {
         // Check states every minute
-        this.checkInterval = setInterval(() => this._checkAllRelayStates(), 60 * 1000);
+        this.checkInterval = setInterval(() => this._checkAllRelayStates(), 6 * 1000);
         // Run initial check
         this._checkAllRelayStates();
     }
@@ -87,27 +86,29 @@ class TimerManager {
     }
 
     async _updateRelayState(slaveId, relayNumber) {
-        const key = this.getKey(slaveId, relayNumber);
-        const schedules = scheduleManager.getSchedulesForRelay(slaveId, relayNumber);
-        const currentTime = getCurrentTime();
-        
-        const shouldBeOn = schedules.some(schedule => schedule.isActiveForDate(currentTime));
-        console.log({shouldBeOn})
-        logger.debug('Checking relay state', { slaveId, relayNumber, currentTime, shouldBeOn });
-        // Only update if state has changed
-        if (this.relayStates.get(key) !== shouldBeOn) {
-            try {
-                await modbusClient.setRelayState(slaveId, relayNumber, shouldBeOn);
-                this.relayStates.set(key, shouldBeOn);
-                logger.info('Timer changed relay state', { slaveId, relayNumber, state: shouldBeOn });
-            } catch (err) {
-                logger.error('Failed to set relay state from timer', { 
-                    error: err.message, 
-                    slaveId,
-                    relayNumber
-                });
+
+            const key = this.getKey(slaveId, relayNumber);
+            const schedules = scheduleManager.getSchedulesForRelay(slaveId, relayNumber);
+            const currentTime = getCurrentTime();
+            const state = await modbusClient.readRelayState(slaveId, relayNumber)
+            const shouldBeOn = schedules.some(schedule => schedule.isActiveForDate(currentTime));
+            console.log({shouldBeOn, target: {slaveId, relayNumber}, state: state.data[0]})
+            logger.debug('Checking relay state', { slaveId, relayNumber, currentTime, shouldBeOn });
+            
+            // Only update if state has changed
+            if ((!!state.data[0]) !== shouldBeOn) {
+                try {
+                    await modbusClient.setRelayState(slaveId, relayNumber, shouldBeOn);
+                    this.relayStates.set(key, shouldBeOn);
+                    logger.info('Timer changed relay state', { slaveId, relayNumber, state: shouldBeOn });
+                } catch (err) {
+                    logger.error('Failed to set relay state from timer', { 
+                        error: err.message, 
+                        slaveId,
+                        relayNumber
+                    });
+                }
             }
-        }
     }
 
     async shutdown() {

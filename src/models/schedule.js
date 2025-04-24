@@ -2,10 +2,10 @@ const fs = require('fs').promises;
 const path = require('path');
 const logger = require('../config/logger');
 const { toAppTimezone, getCurrentTime, dateFormat } = require('../config/timezone');
-const { parse, isBefore, isAfter, isEqual } = require('date-fns');
-
+const { parse, isBefore, isAfter, isEqual, subMinutes } = require('date-fns');
+const blinkRelay = require("../utils/blink")
 class Schedule {
-    constructor(slaveId, relayNumber, startTime, endTime, recurrence = 'once', daysOfWeek = [], active = true) {
+    constructor(slaveId, relayNumber, startTime, endTime, recurrence = 'once', daysOfWeek = [], active = true, blink = false) {
         this.id = Math.random().toString(36).substr(2, 9);
         this.slaveId = slaveId;
         this.relayNumber = relayNumber;
@@ -14,6 +14,7 @@ class Schedule {
         this.recurrence = recurrence; // 'once', 'daily', 'weekly'
         this.daysOfWeek = daysOfWeek; // [0-6] for weekly recurrence (0 = Sunday)
         this.active = active;
+        this.blink = blink;
         this.createdAt = getCurrentTime();
     }
 
@@ -37,16 +38,30 @@ class Schedule {
             }
         }
 
-        // Convert times to minutes for easier comparison
-        const targetTimeInMinutes = parse(targetTime, dateFormat, new Date());
-        const startTimeInMinutes = parse(this.startTime, dateFormat, new Date());
-        const endTimeInMinutes = parse(this.endTime, dateFormat, new Date());
-
-        // Handle time wrapping around midnight
-        console.log({targetTimeInMinutes, startTimeInMinutes, endTimeInMinutes})
-
-        // Normal time comparison (same day)
-        return (isAfter(targetTimeInMinutes,startTimeInMinutes) || isEqual(targetTimeInMinutes,startTimeInMinutes)) && isBefore(targetTimeInMinutes, endTimeInMinutes);
+        const now = parse(targetTime, dateFormat, new Date());
+        const start = parse(this.startTime, dateFormat, new Date());
+        const end = parse(this.endTime, dateFormat, new Date());
+    
+        const isWithinRange = 
+            (isAfter(now, start) || isEqual(now, start)) &&
+            isBefore(now, end);
+    
+        // ⏰ Trigger blink if it's 10 minutes before end time
+        const tenMinutesBeforeEnd = subMinutes(end, 10);
+        const isBlinkTime = isAfter(now, tenMinutesBeforeEnd) && isBefore(now, end);
+    
+        if (isBlinkTime && !this.blink) {
+            logger.info(`[BLINK] Relay should blink - 10 minutes before end`, {
+                now,
+                endTime: end
+            });
+            this.blink = true;
+            blinkRelay(this.slaveId, this.relayNumber)
+            // Place your blink logic here (e.g., trigger a Modbus blink command)
+            // this._triggerBlink?.();
+        }
+    
+        return isWithinRange;
     }
 }
 
@@ -119,7 +134,7 @@ class ScheduleManager {
         }
     }
 
-    addSchedule(slaveId, relayNumber, startTime, endTime, recurrence = 'once', daysOfWeek = []) {
+    addSchedule(slaveId, relayNumber, startTime, endTime, recurrence = 'once', daysOfWeek = [], active = true, blink = false) {
         // Find existing schedule for this slave and relay
         const existingSchedule = Array.from(this.schedules.values())
             .find(s => s.slaveId === slaveId && s.relayNumber === relayNumber);
@@ -130,6 +145,7 @@ class ScheduleManager {
             existingSchedule.endTime = endTime;
             existingSchedule.recurrence = recurrence;
             existingSchedule.daysOfWeek = daysOfWeek;
+            existingSchedule.blink = blink;
             this.saveSchedules();
             logger.info('Updated existing schedule', { 
                 slaveId, 
@@ -139,7 +155,7 @@ class ScheduleManager {
             return existingSchedule;
         } else {
             // Create new schedule
-            const schedule = new Schedule(slaveId, relayNumber, startTime, endTime, recurrence, daysOfWeek);
+            const schedule = new Schedule(slaveId, relayNumber, startTime, endTime, recurrence, daysOfWeek, true, false);
             this.schedules.set(schedule.id, schedule);
             this.saveSchedules();
             logger.info('Created new schedule', { 
