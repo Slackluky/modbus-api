@@ -11,10 +11,6 @@ router.get('/slave/:slaveId/relay/:number', relayController.getRelayState);
 // Set state of a single relay for a specific slave
 router.post('/slave/:slaveId/relay/:number', relayController.setRelayState);
 
-
-// Set multiple relay states for a specific slave
-router.post('/slave/:slaveId/relays', relayController.setMultipleRelayStates);
-
 // Set Relay Timer
 router.post('/slave/:slaveId/relay/:number/timer', relayController.setRelayTimer);
 

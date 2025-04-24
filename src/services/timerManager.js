@@ -35,7 +35,7 @@ class TimerManager {
             daysOfWeek
         );
 
-        // await modbusClient.setRelayState(slaveId, relayNumber, true);
+        await modbusClient.setRelayState(slaveId, relayNumber, true);
         this.relayStates.set(this.getKey(slaveId, relayNumber), true);
         // Update relay state immediately
         await this._updateRelayState(slaveId, relayNumber);
@@ -69,7 +69,7 @@ class TimerManager {
 
     startScheduleChecker() {
         // Check states every minute
-        this.checkInterval = setInterval(() => this._checkAllRelayStates(), 6 * 1000);
+        this.checkInterval = setInterval(() => this._checkAllRelayStates(), 30 * 1000);
         // Run initial check
         this._checkAllRelayStates();
     }

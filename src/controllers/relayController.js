@@ -85,40 +85,6 @@ const setRelayState = async (req, res) => {
     }
 };
 
-const setMultipleRelayStates = async (req, res) => {
-    try {
-        const slaveId = parseInt(req.params.slaveId);
-        const states = req.body.states;
-
-        if (isNaN(slaveId) || !modbusClient.getSlaveById(slaveId)) {
-            logger.warn('Invalid slave ID requested', { slaveId });
-            return res.status(400).json({ error: 'Invalid slave ID' });
-        }
-
-        if (!Array.isArray(states)) {
-            logger.warn('Invalid states format', { states });
-            return res.status(400).json({ error: 'States must be an array' });
-        }
-
-        await modbusClient.setMultipleRelayStates(slaveId, states);
-        const response = {
-            slaveId,
-            states,
-            slave: modbusClient.getSlaveById(slaveId)
-        };
-        logger.info('Set multiple relay states', response);
-        res.json(response);
-    } catch (err) {
-        logger.error('Failed to set relay states', { 
-            error: err.message,
-            stack: err.stack,
-            slaveId: req.params.slaveId,
-            states: req.body.states
-        });
-        res.status(500).json({ error: 'Failed to set relay states', details: err.message });
-    }
-};
-
 // Set timer for a relay
 const setRelayTimer = async (req, res) => {
     try {
@@ -151,7 +117,7 @@ const setRelayTimer = async (req, res) => {
             return res.status(400).json({ error: 'Days of week are required for weekly recurrence' });
         }
 
-        const schedule = await timerManager.setTimer(slaveId, relayNumber, startTime, endTime, recurrence, daysOfWeek);
+        const schedule = await withTimeout(timerManager.setTimer(slaveId, relayNumber, startTime, endTime, recurrence, daysOfWeek));
         logger.info('Timer set successfully', {...schedule, status: 'success'});
         res.json({...schedule, status: 'success'});
     } catch (err) {
@@ -165,7 +131,12 @@ const setRelayTimer = async (req, res) => {
         res.status(500).json({ error: 'Failed to set timer', details: err.message });
     }
 };
-
+const withTimeout = (promise, timeout = 5000) => {
+    const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Timeout reached')), timeout)
+    );
+    return Promise.race([promise, timeoutPromise]);
+};
 // Set multiple timers for relays
 const setRelayTimers = async (req, res) => {
     logger.debug(`Calling setTimer for index result`);
@@ -177,12 +148,6 @@ const setRelayTimers = async (req, res) => {
             return res.status(400).json({ error: 'Timers array is required and must not be empty' });
         }
 
-        const withTimeout = (promise, timeout = 5000) => {
-            const timeoutPromise = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('Timeout reached')), timeout)
-            );
-            return Promise.race([promise, timeoutPromise]);
-        };
         const results = [];
 
         for (let index = 0; index < timers.length; index++) {
@@ -352,7 +317,6 @@ module.exports = {
     getRelayState,
     setRelayTimers,
     setRelayState,
-    setMultipleRelayStates,
     setRelayTimer,
     clearRelayTimer,
     getRelayTimer,
