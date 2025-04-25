@@ -1,7 +1,7 @@
 const logger = require('../config/logger');
 const modbusClient = require('../config/modbus');
 const scheduleManager = require('../models/schedule');
-const { parse, isAfter, isEqual, isBefore } = require('date-fns');
+const { parse, isAfter, isEqual, isBefore, subMinutes } = require('date-fns');
 const { getCurrentTime, dateFormat } = require('../config/timezone');
 class TimerManager {
     constructor() {
@@ -39,7 +39,7 @@ class TimerManager {
         const start = parse(startTime, dateFormat, new Date());
         const end = parse(startTime, dateFormat, new Date());
     
-        const isWithinRange = (isAfter(now, start) || isEqual(now, start)) && isBefore(now, end);
+        const isWithinRange = (isAfter(now, subMinutes(start, 1)) || isEqual(now, start)) && isBefore(now, end);
         await modbusClient.setRelayState(slaveId, relayNumber, isWithinRange);
         this.relayStates.set(this.getKey(slaveId, relayNumber), true);
         // Update relay state immediately
