@@ -2,7 +2,7 @@ const fs = require('fs').promises;
 const path = require('path');
 const logger = require('../config/logger');
 const { toAppTimezone, getCurrentTime, dateFormat } = require('../config/timezone');
-const { parse, isBefore, isAfter, isEqual, subMinutes } = require('date-fns');
+const { parse, isBefore, isAfter, isEqual, subMinutes, addMinutes } = require('date-fns');
 const blinkRelay = require("../utils/blink")
 class Schedule {
     constructor(slaveId, relayNumber, startTime, endTime, recurrence = 'once', daysOfWeek = [], active = true, blink = false) {
@@ -25,7 +25,6 @@ class Schedule {
         console.log({date})
         const targetTime = toAppTimezone(date);
         logger.debug('Converted time:', targetTime);
-        const [targetHour, targetMinute] = targetTime.split(':').map(Number);
         
         // Check day of week for weekly recurrence
         if (this.recurrence === 'weekly') {
@@ -47,19 +46,20 @@ class Schedule {
             isBefore(now, end);
     
         // ⏰ Trigger blink if it's 10 minutes before end time
-        const tenMinutesBeforeEnd = subMinutes(end, 10);
-        const isBlinkTime = isAfter(now, tenMinutesBeforeEnd) && isBefore(now, end);
+        // const tenMinutesAfterStart = addMinutes(start, 10)
+        // const tenMinutesBeforeEnd = subMinutes(end, 10);
+        // const isBlinkTime = isAfter(now, tenMinutesBeforeEnd) && (isBefore(now, end) && isAfter(now, tenMinutesAfterStart));
     
-        if (isBlinkTime && !this.blink) {
-            logger.info(`[BLINK] Relay should blink - 10 minutes before end`, {
-                now,
-                endTime: end
-            });
-            this.blink = true;
-            blinkRelay(this.slaveId, this.relayNumber)
-            // Place your blink logic here (e.g., trigger a Modbus blink command)
-            // this._triggerBlink?.();
-        }
+        // if (isBlinkTime && !this.blink) {
+        //     logger.info(`[BLINK] Relay should blink - 10 minutes before end`, {
+        //         now,
+        //         endTime: end
+        //     });
+        //     this.blink = true;
+        //     blinkRelay(this.slaveId, this.relayNumber)
+        //     // Place your blink logic here (e.g., trigger a Modbus blink command)
+        //     // this._triggerBlink?.();
+        // }
     
         return isWithinRange;
     }
