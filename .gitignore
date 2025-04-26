@@ -2,7 +2,7 @@
 node_modules/
 package-lock.json
 yarn.lock
-
+data/*
 # Environment variables
 .env
 .env.*
@@ -31,7 +31,7 @@ pids
 dist/
 build/
 coverage/
-
+data/
 # Temporary files
 tmp/
 temp/

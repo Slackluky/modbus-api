@@ -1,7 +1,7 @@
 const logger = require('../config/logger');
 const modbusClient = require('../config/modbus');
 const scheduleManager = require('../models/schedule');
-const { parse, isAfter, isEqual, isBefore, subMinutes } = require('date-fns');
+const { parse, isAfter, isEqual, isBefore, subMinutes, startOfMinute } = require('date-fns');
 const { getCurrentTime, dateFormat } = require('../config/timezone');
 class TimerManager {
     constructor() {
@@ -25,6 +25,7 @@ class TimerManager {
         if (recurrence === 'weekly' && (!Array.isArray(daysOfWeek) || daysOfWeek.length === 0)) {
             throw new Error('Days of week must be specified for weekly recurrence');
         }
+        // Update relay state immediately
 
         // Add new schedule
         const schedule = scheduleManager.addSchedule(
@@ -35,16 +36,7 @@ class TimerManager {
             recurrence,
             daysOfWeek
         );
-        const now = parse(getCurrentTime(), dateFormat, new Date());
-        const start = parse(startTime, dateFormat, new Date());
-        const end = parse(startTime, dateFormat, new Date());
-    
-        const isWithinRange = (isAfter(now, subMinutes(start, 1)) || isEqual(now, start)) && isBefore(now, end);
-        await modbusClient.setRelayState(slaveId, relayNumber, isWithinRange);
-        this.relayStates.set(this.getKey(slaveId, relayNumber), true);
-        // Update relay state immediately
-        await this._updateRelayState(slaveId, relayNumber);
-
+        await this._updateRelayState(schedule);
         logger.info('Timer set', { 
             slaveId, 
             relayNumber, 
@@ -74,37 +66,34 @@ class TimerManager {
 
     startScheduleChecker() {
         // Check states every minute
-        this.checkInterval = setInterval(() => this._checkAllRelayStates(), 30 * 1000);
+        this.checkInterval = setInterval(() => this._checkAllRelayStates(), 10 * 1000);
         // Run initial check
         this._checkAllRelayStates();
     }
 
     async _checkAllRelayStates() {
         
-        const activeSchedules = scheduleManager.getAllSchedules();
-        const relayKeys = new Set(activeSchedules.map(s => this.getKey(s.slaveId, s.relayNumber)));
-        console.log({relayKeys, activeSchedules})   
-        for (const key of relayKeys) {
-            const [slaveId, relayNumber] = key.split('_').map(Number);
-            await this._updateRelayState(slaveId, relayNumber);
+        const activeSchedules = scheduleManager.getActiveSchedules();
+        for (const schedule of activeSchedules) {
+            console.log('activeSchedules', {schedule})
+            await this._updateRelayState(schedule);
         }
     }
 
-    async _updateRelayState(slaveId, relayNumber) {
-
-            const key = this.getKey(slaveId, relayNumber);
-            const schedules = scheduleManager.getSchedulesForRelay(slaveId, relayNumber);
+    async _updateRelayState(schedule) {
+            console.log({schedule})
             const currentTime = getCurrentTime();
+            const {slaveId, relayNumber, id} = schedule;
             const state = await modbusClient.readRelayState(slaveId, relayNumber)
-            const shouldBeOn = schedules.some(schedule => schedule.isActiveForDate(currentTime));
-            console.log({shouldBeOn, target: {slaveId, relayNumber}, state: state.data[0]})
-            logger.debug('Checking relay state', { slaveId, relayNumber, currentTime, shouldBeOn });
+            const shouldBeOn = schedule.isActiveForDate(currentTime);
+            console.log('Checking relay state', { slaveId, relayNumber, currentTime, shouldBeOn })
+            logger.info('Checking relay state', { slaveId, relayNumber, currentTime, shouldBeOn });
             
             // Only update if state has changed
             if ((!!state.data[0]) !== shouldBeOn) {
                 try {
                     await modbusClient.setRelayState(slaveId, relayNumber, shouldBeOn);
-                    this.relayStates.set(key, shouldBeOn);
+                    scheduleManager.updateSchedule(id, {active: shouldBeOn})
                     logger.info('Timer changed relay state', { slaveId, relayNumber, state: shouldBeOn });
                 } catch (err) {
                     logger.error('Failed to set relay state from timer', { 
@@ -113,6 +102,12 @@ class TimerManager {
                         relayNumber
                     });
                 }
+            } else {
+                scheduleManager.updateSchedule(id, {active: shouldBeOn})
+            }
+
+            if (!shouldBeOn) {
+                this.clearTimer()
             }
     }
 
@@ -124,9 +119,9 @@ class TimerManager {
 
 
         // Turn off all relays that were managed by timers
-        const promises = Array.from(this.relayStates.entries()).map(async ([key, state]) => {
-            if (state) { // Only turn off relays that are currently on
-                const [slaveId, relayNumber] = key.split('_').map(Number);
+        const timers = getAllTimers()
+        const promises = timers.map(async ({active, slaveId, relayNumber}) => {
+            if (active) { // Only turn off relays that are currently on
                 try {
                     await modbusClient.setRelayState(slaveId, relayNumber, false);
                     logger.info('Relay turned off during shutdown', { slaveId, relayNumber });
