@@ -1,6 +1,6 @@
 const fs = require('fs').promises;
 const path = require('path');
-const logger = require('../config/logger');
+const { logger } = require('../config/logger');
 const { toAppTimezone, getCurrentTime, dateFormat } = require('../config/timezone');
 const { parse, isBefore, isAfter, isEqual, subMinutes, startOfMinute } = require('date-fns');
 const blinkRelay = require("../utils/blink")
@@ -42,7 +42,7 @@ class Schedule {
         const end = startOfMinute(parse(this.endTime, dateFormat, new Date()));
     
     
-        const isWithinRange = (isAfter(now, subMinutes(start, 1)) || isEqual(now, start)) && isBefore(now, end);
+        const isWithinRange = (isAfter(now, subMinutes(start, 1)) || isEqual(now, start)) && !isEqual(now, end) && isBefore(now, end);
     
         return isWithinRange;
     }

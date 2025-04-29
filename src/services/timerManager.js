@@ -1,8 +1,7 @@
-const logger = require('../config/logger');
+const { logger } = require('../config/logger');
 const modbusClient = require('../config/modbus');
 const scheduleManager = require('../models/schedule');
-const { parse, isAfter, isEqual, isBefore, subMinutes, startOfMinute } = require('date-fns');
-const { getCurrentTime, dateFormat } = require('../config/timezone');
+const { getCurrentTime } = require('../config/timezone');
 class TimerManager {
     constructor() {
         this.relayStates = new Map(); // Map of slaveId_relayNumber -> current state
@@ -75,19 +74,16 @@ class TimerManager {
         
         const activeSchedules = scheduleManager.getActiveSchedules();
         for (const schedule of activeSchedules) {
-            console.log('activeSchedules', {schedule})
             await this._updateRelayState(schedule);
         }
     }
 
     async _updateRelayState(schedule) {
-            console.log({schedule})
             const currentTime = getCurrentTime();
             const {slaveId, relayNumber, id} = schedule;
             const state = await modbusClient.readRelayState(slaveId, relayNumber)
             const shouldBeOn = schedule.isActiveForDate(currentTime);
-            console.log('Checking relay state', { slaveId, relayNumber, currentTime, shouldBeOn })
-            logger.info('Checking relay state', { slaveId, relayNumber, currentTime, shouldBeOn });
+            logger.info('Checking relay state', { slaveId, relayNumber, currentTime, shouldBeOn, schedule: schedule.id, endTime: schedule.endTime});
             
             // Only update if state has changed
             if ((!!state.data[0]) !== shouldBeOn) {
@@ -103,11 +99,9 @@ class TimerManager {
                     });
                 }
             } else {
-                scheduleManager.updateSchedule(id, {active: shouldBeOn})
-            }
-
-            if (!shouldBeOn) {
-                this.clearTimer()
+                if (schedule.active !== shouldBeOn) {
+                    scheduleManager.updateSchedule(id, {active: shouldBeOn})
+                }
             }
     }
 

@@ -1,6 +1,6 @@
 require('dotenv').config();
 const ModbusRTU = require('modbus-serial');
-const logger = require('./logger');
+const {logger} = require('./logger');
 
 class ModbusClient {
     constructor() {
@@ -19,12 +19,12 @@ class ModbusClient {
                 stopBits: parseInt(process.env.MODBUS_STOP_BITS),
                 parity: process.env.MODBUS_PARITY
             });
-            this.client.setID(parseInt(process.env.MODBUS_DEVICE_ID));
+            await this.client.setID(parseInt(process.env.MODBUS_DEVICE_ID));
             this.isConnected = true;
             console.log('Connected to Modbus device');
 
             // Set up error handler
-            this.client.on('error', this.handleError.bind(this));
+            await this.client.on('error', this.handleError.bind(this));
         } catch (err) {
             console.error('Error connecting to Modbus:', err);
             this.isConnected = false;

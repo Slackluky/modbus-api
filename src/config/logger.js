@@ -37,13 +37,47 @@ const logger = winston.createLogger({
             maxSize: '20m',
             maxFiles: '14d',
             level: 'error'
-        })
+        }),
     ]
 });
 
+// API-specific logger
+const apiLogger = winston.createLogger({
+    level: 'info',
+    format: logFormat,
+    transports: [
+        new winston.transports.Console({
+            format: winston.format.combine(
+                winston.format.colorize(),
+                winston.format.simple()
+            )
+        }),
+        new winston.transports.DailyRotateFile({
+            filename: path.join('logs', 'api-%DATE%.log'),
+            datePattern: 'YYYY-MM-DD',
+            maxSize: '20m',
+            maxFiles: '14d',
+            level: 'info'
+        }),
+
+        // Write all errors to error.log
+        new winston.transports.DailyRotateFile({
+            filename: path.join('logs', 'api-error-%DATE%.log'),
+            datePattern: 'YYYY-MM-DD',
+            maxSize: '20m',
+            maxFiles: '14d',
+            level: 'error'
+        })
+    ]
+  });
 // Create a stream object for Morgan middleware
 logger.stream = {
     write: (message) => logger.info(message.trim())
 };
 
-module.exports = logger;
+// Create a stream object for Morgan middleware
+apiLogger.stream = {
+    write: (message) => apiLogger.info(message.trim())
+};
+
+module.exports = { logger, apiLogger };

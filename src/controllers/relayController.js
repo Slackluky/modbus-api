@@ -1,5 +1,5 @@
 const modbusClient = require('../config/modbus');
-const logger = require('../config/logger');
+const { apiLogger: logger } = require('../config/logger');
 const timerManager = require('../services/timerManager');
 
 const getSlaves = async (req, res) => {
@@ -133,7 +133,7 @@ const setRelayTimer = async (req, res) => {
 };
 const withTimeout = (promise, timeout = 5000) => {
     const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Timeout reached')), timeout)
+        setTimeout(() => reject(new Error('The Modbus device took too long to respond, please try again')), timeout)
     );
     return Promise.race([promise, timeoutPromise]);
 };
@@ -142,7 +142,6 @@ const setRelayTimers = async (req, res) => {
     logger.debug(`Calling setTimer for index result`);
     try {
         const timers = req.body.timers;
-        console.log({timers})
         if (!Array.isArray(timers) || timers.length === 0) {
             logger.warn('Timers array is required and must not be empty');
             return res.status(400).json({ error: 'Timers array is required and must not be empty' });

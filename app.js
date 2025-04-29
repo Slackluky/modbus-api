@@ -7,7 +7,7 @@ process.env.TZ = DEFAULT_TIMEZONE;
 const cors = require('cors');
 const modbusClient = require('./src/config/modbus');
 const relayRoutes = require('./src/routes/relayRoutes');
-const logger = require('./src/config/logger');
+const {logger} = require('./src/config/logger');
 const timerManager = require('./src/services/timerManager');
 
 const app = express();
@@ -21,7 +21,9 @@ app.use(express.json());
 // Initialize services
 Promise.all([
     modbusClient.connect(),
-    timerManager.init()
+    setTimeout(() => {
+        timerManager.init()
+    }, 1000)
 ]).catch(err => {
     logger.error('Failed to initialize services', { error: err.message });
     process.exit(1);
