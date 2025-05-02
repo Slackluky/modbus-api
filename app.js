@@ -1,19 +1,22 @@
-require('dotenv').config();
-const express = require('express');
-const { DEFAULT_TIMEZONE } = require('./src/config/timezone');
+
+import express from 'express';
+import { DEFAULT_TIMEZONE } from './src/config/timezone.js';
 
 // Set default timezone for the application
 process.env.TZ = DEFAULT_TIMEZONE;
-const cors = require('cors');
-const modbusClient = require('./src/config/modbus');
-const relayRoutes = require('./src/routes/relayRoutes');
-const {logger} = require('./src/config/logger');
-const timerManager = require('./src/services/timerManager');
+
+import cors from 'cors';
+import modbusClient from './src/config/modbus.js';
+import relayRoutes from './src/routes/relayRoutes.js';
+import { logger } from './src/config/logger.js';
+import timerManager from './src/services/timerManager.js';
 
 const app = express();
 const port = process.env.PORT || 4000;
 const host = process.env.HOST || 'localhost';
 
+import dotenv from 'dotenv'
+dotenv.config();
 // Configure middleware
 app.use(cors());
 app.use(express.json());

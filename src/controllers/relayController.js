@@ -1,6 +1,7 @@
-const modbusClient = require('../config/modbus');
-const { apiLogger: logger } = require('../config/logger');
-const timerManager = require('../services/timerManager');
+import modbusClient from '../config/modbus.js';
+import { apiLogger as logger } from '../config/logger.js';
+import timerManager from '../services/timerManager.js';
+import delay from '../utils/delay.js';
 
 const getSlaves = async (req, res) => {
     try {
@@ -196,6 +197,7 @@ const setRelayTimers = async (req, res) => {
         
                 // Call to set timer
                 logger.debug(`Calling setTimer for index ${index}...`);
+                await delay(50)
                 const schedule = await withTimeout(
                     timerManager.setTimer(
                         slaveId,
@@ -311,7 +313,7 @@ const getAllTimers = async (req, res) => {
     }
 };
 
-module.exports = {
+export {
     getSlaves,
     getRelayState,
     setRelayTimers,

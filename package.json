@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Express.js application to control Modbus RTU relays via RS485",
   "main": "app.js",
-  "type": "commonjs",
+  "type": "module",
   "scripts": {
     "start": "node --max-old-space-size=6144 app.js",
     "deploy": "pm2 start app.js --node-args='--max-old-space-size=6144' --name billiard-server"
@@ -17,6 +17,7 @@
     "express": "4.18.2",
     "modbus-serial": "8.0.16",
     "morgan": "^1.10.0",
+    "p-queue": "^8.1.0",
     "serialport": "^13.0.0",
     "winston": "3.8.2",
     "winston-daily-rotate-file": "4.7.1"

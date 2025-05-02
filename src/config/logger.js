@@ -1,7 +1,6 @@
-const winston = require('winston');
-require('winston-daily-rotate-file');
-const path = require('path');
-
+import winston from 'winston';
+import 'winston-daily-rotate-file';
+import path from 'path';
 // Define log format
 const logFormat = winston.format.combine(
     winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
@@ -80,4 +79,4 @@ apiLogger.stream = {
     write: (message) => apiLogger.info(message.trim())
 };
 
-module.exports = { logger, apiLogger };
+export { logger, apiLogger };

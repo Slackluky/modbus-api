@@ -1,6 +1,9 @@
-require('dotenv').config();
-const ModbusRTU = require('modbus-serial');
-const {logger} = require('./logger');
+import dotenv from 'dotenv';
+import queue from './queue.js'
+import delay from '../utils/delay.js'
+import { logger } from './logger.js';
+import ModbusRTU from 'modbus-serial';
+dotenv.config();
 
 class ModbusClient {
     constructor() {
@@ -47,8 +50,9 @@ class ModbusClient {
 
         // Only change slave ID if it's different from current
         if (this.currentSlaveId !== slaveId) {
-            await this.client.setID(slaveId);
+            await queue.add(() => this.client.setID(slaveId));
             this.currentSlaveId = slaveId;
+            await delay(50)
             logger.debug('Selected Modbus slave', { slaveId });
         }
     }
@@ -58,6 +62,7 @@ class ModbusClient {
             throw new Error('Modbus client not connected');
         }
         await this.selectSlave(slaveId);
+        await delay(50)
         return await this.client.readCoils(relayNumber - 1, 1);
     }
 
@@ -71,9 +76,9 @@ class ModbusClient {
             await this.selectSlave(slaveId);
             console.log(`[setRelayState] roar 🦁 - Slave selected: ${slaveId}`);
     
-            const result = await this.client.writeCoil(relayNumber - 1, state);
+            const result = await queue.add(() => this.client.writeCoil(relayNumber - 1, state));
             console.log(`[setRelayState] ✅ writeCoil completed for Relay ${relayNumber}`, result);
-    
+            await delay(50)
             return result;
         } catch (err) {
             console.error(`[setRelayState] ❌ Error:`, err.message);
@@ -86,7 +91,7 @@ class ModbusClient {
             throw new Error('Modbus client not connected');
         }
         await this.selectSlave(slaveId);
-        return await this.client.writeCoils(0, states);
+        return await queue.add(() => this.client.writeCoils(0, states));
     }
 
     getSlaves() {
@@ -127,4 +132,4 @@ process.on('SIGINT', async () => {
     process.exit(0);
 });
 
-module.exports = modbusClient;
+export default modbusClient;

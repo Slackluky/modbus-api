@@ -1,5 +1,5 @@
-const { SerialPort } = require('serialport');
-const crc = require('crc'); // npm install crc
+import { SerialPort } from 'serialport';
+import crc from 'crc'; // npm install crc
 
 // Common Modbus commands
 const READ_SLAVE_ID = Buffer.from([0x00, 0x03, 0x00, 0x00, 0x00, 0x01, 0x85, 0xDB]);
@@ -144,7 +144,7 @@ function createModbusHelper(portPath, settings = DEFAULT_SETTINGS) {
   };
 }
 
-module.exports = {
+export {
   bufferToHexString,
   createModbusHelper,
   generateSetSlaveIdCommand

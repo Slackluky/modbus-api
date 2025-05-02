@@ -1,4 +1,4 @@
-const { createModbusHelper } = require('./modbus-helper');
+import { createModbusHelper } from './modbus-helper.js';
 
 // Get command line arguments
 const portPath = process.argv[2] || 'COM5'; // Default to COM5 if not specified

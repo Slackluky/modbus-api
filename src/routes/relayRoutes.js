@@ -1,7 +1,6 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const relayController = require('../controllers/relayController');
-
+import * as relayController from '../controllers/relayController.js'
 // Get list of all slaves
 router.get('/slaves', relayController.getSlaves);
 
@@ -35,4 +34,4 @@ router.post('/slave/:slaveId/relay/:number/schedule', relayController.setRelayTi
 // Clear specific schedule
 router.delete('/schedule/:scheduleId', relayController.clearRelayTimer);
 
-module.exports = router;
+export default router;

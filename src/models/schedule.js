@@ -1,9 +1,15 @@
-const fs = require('fs').promises;
-const path = require('path');
-const { logger } = require('../config/logger');
-const { toAppTimezone, getCurrentTime, dateFormat } = require('../config/timezone');
-const { parse, isBefore, isAfter, isEqual, subMinutes, startOfMinute } = require('date-fns');
-const blinkRelay = require("../utils/blink")
+import { promises as fs } from 'fs';
+import path from 'path';
+import { logger } from '../config/logger.js';
+import { toAppTimezone, getCurrentTime, dateFormat } from '../config/timezone.js';
+import {
+  parse,
+  isBefore,
+  isAfter,
+  isEqual,
+  subMinutes,
+  startOfMinute
+} from 'date-fns';
 class Schedule {
     constructor(slaveId, relayNumber, startTime, endTime, recurrence = 'once', daysOfWeek = [], active = true, blink = false) {
         this.id = Math.random().toString(36).substr(2, 9);
@@ -188,4 +194,4 @@ class ScheduleManager {
 }
 
 const scheduleManager = new ScheduleManager();
-module.exports = scheduleManager;
+export default scheduleManager;

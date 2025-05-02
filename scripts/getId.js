@@ -1,5 +1,4 @@
-const { SerialPort } = require('serialport');
-const { bufferToHexString, createModbusHelper } = require('./modbus-helper');
+import  { bufferToHexString, createModbusHelper } from './modbus-helper.js';
 
 // Configuration - update these values based on your setup
 const PORT_PATH = process.argv[2] || 'COM5'; // Use command line argument or default to COM5

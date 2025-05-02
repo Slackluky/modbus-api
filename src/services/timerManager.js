@@ -1,7 +1,8 @@
-const { logger } = require('../config/logger');
-const modbusClient = require('../config/modbus');
-const scheduleManager = require('../models/schedule');
-const { getCurrentTime } = require('../config/timezone');
+import { logger } from '../config/logger.js';
+import modbusClient from '../config/modbus.js';
+import scheduleManager from '../models/schedule.js';
+import { getCurrentTime } from '../config/timezone.js';
+import delay from '../utils/delay.js';
 class TimerManager {
     constructor() {
         this.relayStates = new Map(); // Map of slaveId_relayNumber -> current state
@@ -69,11 +70,11 @@ class TimerManager {
         // Run initial check
         this._checkAllRelayStates();
     }
-
     async _checkAllRelayStates() {
         
         const activeSchedules = scheduleManager.getActiveSchedules();
         for (const schedule of activeSchedules) {
+            await delay(50)
             await this._updateRelayState(schedule);
         }
     }
@@ -136,4 +137,4 @@ class TimerManager {
 
 // Create and export singleton instance
 const timerManager = new TimerManager();
-module.exports = timerManager;
+export default timerManager;
