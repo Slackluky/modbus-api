@@ -163,7 +163,7 @@ class ScheduleManager {
 
     getSchedulesForRelay(slaveId, relayNumber) {
         return Array.from(this.schedules.values())
-            .filter(s => s.slaveId === slaveId && s.relayNumber === relayNumber);
+            .find(s => s.slaveId === slaveId && s.relayNumber === relayNumber);
     }
 
     getAllSchedules() {

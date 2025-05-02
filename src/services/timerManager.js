@@ -2,7 +2,7 @@ import { logger } from '../config/logger.js';
 import modbusClient from '../config/modbus.js';
 import scheduleManager from '../models/schedule.js';
 import { getCurrentTime } from '../config/timezone.js';
-import delay from '../utils/delay.js';
+import {delay} from '../utils/delay.js';
 class TimerManager {
     constructor() {
         this.relayStates = new Map(); // Map of slaveId_relayNumber -> current state
@@ -36,7 +36,9 @@ class TimerManager {
             recurrence,
             daysOfWeek
         );
-        await this._updateRelayState(schedule);
+        const state = await modbusClient.readRelayState(slaveId, relayNumber)
+        await delay(100)
+        await this._updateRelayState(schedule, state.data[0]);
         logger.info('Timer set', { 
             slaveId, 
             relayNumber, 
@@ -66,28 +68,31 @@ class TimerManager {
 
     startScheduleChecker() {
         // Check states every minute
-        this.checkInterval = setInterval(() => this._checkAllRelayStates(), 30 * 1000);
+        this.checkInterval = setInterval(() => this._checkAllRelayStates(), 10 * 1000);
         // Run initial check
         this._checkAllRelayStates();
     }
     async _checkAllRelayStates() {
-        
-        const activeSchedules = scheduleManager.getActiveSchedules();
-        for (const schedule of activeSchedules) {
-            await delay(50)
-            await this._updateRelayState(schedule);
+        const slaves = Array.from({ length: process.env.NUMBER_OF_SLAVES }, (_, i) => i + 1);
+        for (const slave of slaves) {
+            const {data} = await modbusClient.readRelaysState(slave)
+            for (const [index, relay] of Object.entries(data)) {
+                if (!relay) continue;
+                await delay(50)
+                const schedule = await scheduleManager.getSchedulesForRelay(slave, Number(index) + 1)
+                await this._updateRelayState(schedule, relay);
+            }
         }
     }
 
-    async _updateRelayState(schedule) {
+    async _updateRelayState(schedule, state) {
             const currentTime = getCurrentTime();
             const {slaveId, relayNumber, id} = schedule;
-            const state = await modbusClient.readRelayState(slaveId, relayNumber)
             const shouldBeOn = schedule.isActiveForDate(currentTime);
             logger.info('Checking relay state', { slaveId, relayNumber, currentTime, shouldBeOn, schedule: schedule.id, endTime: schedule.endTime});
             
             // Only update if state has changed
-            if ((!!state.data[0]) !== shouldBeOn) {
+            if ((state) !== shouldBeOn) {
                 try {
                     await modbusClient.setRelayState(slaveId, relayNumber, shouldBeOn);
                     scheduleManager.updateSchedule(id, {active: shouldBeOn})
@@ -114,23 +119,23 @@ class TimerManager {
 
 
         // Turn off all relays that were managed by timers
-        const timers = getAllTimers()
-        const promises = timers.map(async ({active, slaveId, relayNumber}) => {
-            if (active) { // Only turn off relays that are currently on
-                try {
-                    await modbusClient.setRelayState(slaveId, relayNumber, false);
-                    logger.info('Relay turned off during shutdown', { slaveId, relayNumber });
-                } catch (err) {
-                    logger.error('Failed to turn off relay during shutdown', { 
-                        error: err.message,
-                        slaveId,
-                        relayNumber
-                    });
-                }
-            }
-        });
+        // const timers = getAllTimers()
+        // const promises = timers.map(async ({active, slaveId, relayNumber}) => {
+        //     if (active) { // Only turn off relays that are currently on
+        //         try {
+        //             await modbusClient.setRelayState(slaveId, relayNumber, false);
+        //             logger.info('Relay turned off during shutdown', { slaveId, relayNumber });
+        //         } catch (err) {
+        //             logger.error('Failed to turn off relay during shutdown', { 
+        //                 error: err.message,
+        //                 slaveId,
+        //                 relayNumber
+        //             });
+        //         }
+        //     }
+        // });
 
-        await Promise.all(promises);
+        // await Promise.all(promises);
         logger.info('Timer manager shutting down');
     }
 }

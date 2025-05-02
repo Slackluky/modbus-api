@@ -1,8 +1,9 @@
 import dotenv from 'dotenv';
 import queue from './queue.js'
-import delay from '../utils/delay.js'
+import {delay, withTimeout} from '../utils/delay.js'
 import { logger } from './logger.js';
 import ModbusRTU from 'modbus-serial';
+import pRetry from 'p-retry';
 dotenv.config();
 
 class ModbusClient {
@@ -23,7 +24,9 @@ class ModbusClient {
                 parity: process.env.MODBUS_PARITY
             });
             await this.client.setID(parseInt(process.env.MODBUS_DEVICE_ID));
+            this.client.setTimeout(500);
             this.isConnected = true;
+            
             console.log('Connected to Modbus device');
 
             // Set up error handler
@@ -50,7 +53,7 @@ class ModbusClient {
 
         // Only change slave ID if it's different from current
         if (this.currentSlaveId !== slaveId) {
-            await queue.add(() => this.client.setID(slaveId));
+            await queue.add(() => pRetry(() => this.client.setID(slaveId), { retries: 3, minTimeout: 200 }));
             this.currentSlaveId = slaveId;
             await delay(50)
             logger.debug('Selected Modbus slave', { slaveId });
@@ -66,6 +69,21 @@ class ModbusClient {
         return await this.client.readCoils(relayNumber - 1, 1);
     }
 
+    async readRelaysState(slaveId, start = 0, end = 8) {
+        try {
+            if (!this.isConnected) {
+                throw new Error('Modbus client not connected');
+            }
+            await this.selectSlave(slaveId);
+            const result = await this.client.readCoils(start, end);
+            return result;
+        } catch (err) {
+            console.error(`[readRelaysState] ❌ Error:`, err.message);
+            throw err;
+        }
+
+    }
+
     async setRelayState(slaveId, relayNumber, state) {
         if (!this.isConnected) {
             throw new Error('Modbus client not connected');
@@ -76,7 +94,7 @@ class ModbusClient {
             await this.selectSlave(slaveId);
             console.log(`[setRelayState] roar 🦁 - Slave selected: ${slaveId}`);
     
-            const result = await queue.add(() => this.client.writeCoil(relayNumber - 1, state));
+            const result = await queue.add(() => pRetry(() => this.client.writeCoil(relayNumber - 1, state), { retries: 3, minTimeout: 200 }));
             console.log(`[setRelayState] ✅ writeCoil completed for Relay ${relayNumber}`, result);
             await delay(50)
             return result;
@@ -91,7 +109,7 @@ class ModbusClient {
             throw new Error('Modbus client not connected');
         }
         await this.selectSlave(slaveId);
-        return await queue.add(() => this.client.writeCoils(0, states));
+        return await queue.add(() => pRetry(() => this.client.writeCoils(0, states), ));
     }
 
     getSlaves() {
@@ -107,6 +125,20 @@ class ModbusClient {
             try {
                 await this.client.close();
                 logger.info('Modbus connection closed properly');
+            } catch (err) {
+                logger.error('Error closing Modbus connection:', { error: err.message, stack: err.stack });
+            } finally {
+                this.isConnected = false;
+            }
+        }
+    }
+    async reconnect() {
+        if (this.isConnected && this.client) {
+            try {
+                await this.client.close();
+                logger.info('Modbus connection closed properly');
+                await delay(10000)
+                await this.connect()
             } catch (err) {
                 logger.error('Error closing Modbus connection:', { error: err.message, stack: err.stack });
             } finally {

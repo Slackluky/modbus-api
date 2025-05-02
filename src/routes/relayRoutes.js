@@ -7,6 +7,9 @@ router.get('/slaves', relayController.getSlaves);
 // Get state of a single relay for a specific slave
 router.get('/slave/:slaveId/relay/:number', relayController.getRelayState);
 
+// Get state of a single relay for a specific slave
+router.get('/slave/:slaveId', relayController.getSlaveCoils);
+
 // Set state of a single relay for a specific slave
 router.post('/slave/:slaveId/relay/:number', relayController.setRelayState);
 
@@ -33,5 +36,7 @@ router.post('/slave/:slaveId/relay/:number/schedule', relayController.setRelayTi
 
 // Clear specific schedule
 router.delete('/schedule/:scheduleId', relayController.clearRelayTimer);
+
+router.post('/reboot', relayController.reboot);
 
 export default router;

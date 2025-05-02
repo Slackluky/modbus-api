@@ -1,7 +1,7 @@
 import modbusClient from '../config/modbus.js';
 import { apiLogger as logger } from '../config/logger.js';
 import timerManager from '../services/timerManager.js';
-import delay from '../utils/delay.js';
+import {delay, withTimeout} from '../utils/delay.js';
 
 const getSlaves = async (req, res) => {
     try {
@@ -131,12 +131,6 @@ const setRelayTimer = async (req, res) => {
         });
         res.status(500).json({ error: 'Failed to set timer', details: err.message });
     }
-};
-const withTimeout = (promise, timeout = 5000) => {
-    const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('The Modbus device took too long to respond, please try again')), timeout)
-    );
-    return Promise.race([promise, timeoutPromise]);
 };
 // Set multiple timers for relays
 const setRelayTimers = async (req, res) => {
@@ -298,6 +292,30 @@ const getRelayTimer = async (req, res) => {
     }
 };
 
+// Get timers for a relay
+const getSlaveCoils = async (req, res) => {
+    try {
+        const slaveId = parseInt(req.params.slaveId);
+
+        if (isNaN(slaveId) || !modbusClient.getSlaveById(slaveId)) {
+            logger.warn('Invalid slave ID requested', { slaveId });
+            return res.status(400).json({ error: 'Invalid slave ID' });
+        }
+
+        const coils = await modbusClient.readRelaysState(slaveId);
+        console.log(slaveId)
+        logger.info('Timers retrieved successfully', { coils });
+        res.json({ coils });
+    } catch (err) {
+        logger.error('Failed to get timers', { 
+            error: err.message,
+            stack: err.stack,
+            slaveId: req.params.slaveId,
+        });
+        res.status(500).json({ error: 'Failed to get timers', details: err.message });
+    }
+};
+
 // Get all timers
 const getAllTimers = async (req, res) => {
     try {
@@ -313,6 +331,13 @@ const getAllTimers = async (req, res) => {
     }
 };
 
+const reboot = async (req, res) => {
+// Initialize services
+    await timerManager.shutdown()
+    await modbusClient.reconnect()
+    res.json({ message: "exiting" });
+}
+
 export {
     getSlaves,
     getRelayState,
@@ -321,5 +346,7 @@ export {
     setRelayTimer,
     clearRelayTimer,
     getRelayTimer,
-    getAllTimers
+    getAllTimers,
+    getSlaveCoils,
+    reboot
 };
