@@ -80,11 +80,14 @@ class TimerManager {
                 if (!relay) continue;
                 await delay(50)
                 const schedule = await scheduleManager.getSchedulesForRelay(slave, Number(index) + 1)
+                if (!schedule) {
+                    await modbusClient.setRelayState(slave, Number(index) + 1, false);
+                    continue;
+                }
                 await this._updateRelayState(schedule, relay);
             }
         }
     }
-
     async _updateRelayState(schedule, state) {
             const currentTime = getCurrentTime();
             const {slaveId, relayNumber, id} = schedule;
@@ -116,8 +119,6 @@ class TimerManager {
             clearInterval(this.checkInterval);
             this.checkInterval = null;
         }
-
-
         // Turn off all relays that were managed by timers
         // const timers = getAllTimers()
         // const promises = timers.map(async ({active, slaveId, relayNumber}) => {
